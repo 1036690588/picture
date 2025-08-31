@@ -116,6 +116,21 @@ public class Picture implements Serializable {
     @TableLogic
     private Integer isDelete;
 
+    /**
+     * 缩略图 url
+     */
+    private String thumbnailUrl;
+
+    /**
+     * 图片所属的空间id
+     */
+    private Long spaceId;
+
+    /**
+     * 图片主色调
+     */
+    private String picColor;
+
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
 }

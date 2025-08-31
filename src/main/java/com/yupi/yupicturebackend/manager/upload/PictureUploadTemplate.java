@@ -1,11 +1,14 @@
 package com.yupi.yupicturebackend.manager.upload;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.qcloud.cos.model.PutObjectResult;
+import com.qcloud.cos.model.ciModel.persistence.CIObject;
 import com.qcloud.cos.model.ciModel.persistence.ImageInfo;
+import com.qcloud.cos.model.ciModel.persistence.ProcessResults;
 import com.yupi.yupicturebackend.config.CosClientConfig;
 import com.yupi.yupicturebackend.exception.BusinessException;
 import com.yupi.yupicturebackend.exception.ErrorCode;
@@ -17,6 +20,7 @@ import javax.annotation.Resource;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
+import java.util.List;
 
 @Slf4j
 public abstract class PictureUploadTemplate {
@@ -49,6 +53,16 @@ public abstract class PictureUploadTemplate {
             //上传图片到对象存储
             PutObjectResult putObjectResult = cosManager.putPictureObject(uploadPath, tempFile);
             ImageInfo imageInfo = putObjectResult.getCiUploadResult().getOriginalInfo().getImageInfo();
+            ProcessResults processResults = putObjectResult.getCiUploadResult().getProcessResults();
+            List<CIObject> objectList = processResults.getObjectList();
+            if(CollUtil.isNotEmpty(objectList)){
+                CIObject compressedObject = objectList.get(0);
+                CIObject thumbnailObject = compressedObject;
+                if(objectList.size() > 1){
+                    thumbnailObject = objectList.get(1);
+                }
+                return buildResult(filename,compressedObject,thumbnailObject,imageInfo);
+            }
             //封装返回结果
             return buildResult(filename, uploadPath, tempFile, imageInfo);
         } catch (Exception e) {
@@ -99,6 +113,28 @@ public abstract class PictureUploadTemplate {
         Double scale = NumberUtil.round(imageInfo.getWidth() * 1.0 / imageInfo.getHeight(), 2).doubleValue();
         uploadPictureResult.setPicScale(scale);
         uploadPictureResult.setPicFormat(imageInfo.getFormat());
+        uploadPictureResult.setPicColor(imageInfo.getAve());
+        return uploadPictureResult;
+    }
+
+
+    public UploadPictureResult buildResult(String originFilename, CIObject compressedObject,CIObject thumbnailObject,
+                                           ImageInfo imageInfo){
+        //封装返回结果
+        UploadPictureResult uploadPictureResult = new UploadPictureResult();
+        Integer height = compressedObject.getHeight();
+        Integer width = compressedObject.getWidth();
+        double picScale = NumberUtil.round(width * 1.0 / height, 2).doubleValue();
+        uploadPictureResult.setPicName(FileUtil.mainName(originFilename));
+        uploadPictureResult.setPicWidth(width);
+        uploadPictureResult.setPicHeight(height);
+        uploadPictureResult.setPicFormat(compressedObject.getFormat());
+        //设置图片地址为压缩后的地址
+        uploadPictureResult.setUrl(cosClientConfig.getHost() + "/" + compressedObject.getKey());
+        uploadPictureResult.setPicSize(compressedObject.getSize().longValue());
+        uploadPictureResult.setPicScale(picScale);
+        uploadPictureResult.setThumbnailUrl(cosClientConfig.getHost() + "/" + thumbnailObject.getKey());
+        uploadPictureResult.setPicColor(imageInfo.getAve());
         return uploadPictureResult;
     }
 
