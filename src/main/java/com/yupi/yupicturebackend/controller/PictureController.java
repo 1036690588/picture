@@ -168,7 +168,7 @@ public class PictureController {
 //            User loginUser = userService.getLoginUser(request);
 //            pictureService.checkPictureAuth(picture, loginUser);
             boolean hasPermission =
-                    StpKit.SPACE.hasPermission(spaceId, SpaceUserPermissionConstant.PICTURE_VIEW);
+                    StpKit.SPACE.hasPermission(SpaceUserPermissionConstant.PICTURE_VIEW);
             ThrowUtils.throwIf(!hasPermission, ErrorCode.NO_AUTH_ERROR);
             space = spaceService.getById(spaceId);
             ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR,"空间不存在");
@@ -361,7 +361,7 @@ public class PictureController {
     /**
      * 创建AI扩图任务
      */
-    @PostMapping("/out_painting/create")
+    @PostMapping("/out_painting/create_task")
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_EDIT)
     public BaseResponse<CreateOutPaintingTaskResponse> createPictureOutPaintingTask(
             @RequestBody CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest,

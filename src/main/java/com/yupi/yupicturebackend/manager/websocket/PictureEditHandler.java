@@ -44,6 +44,7 @@ public class PictureEditHandler extends TextWebSocketHandler {
         User user = (User)session.getAttributes().get("user");
         Long pictureId = (Long)session.getAttributes().get("pictureId");
         pictureSessions.putIfAbsent(pictureId, ConcurrentHashMap.newKeySet());
+        pictureSessions.get(pictureId).add(session);
         //构造相应
         PictureEditResponseMessage pictureEditResponseMessage = new PictureEditResponseMessage();
         pictureEditResponseMessage.setUser(userService.getUserVO(user));
@@ -65,7 +66,7 @@ public class PictureEditHandler extends TextWebSocketHandler {
 
         //从Session属性中获取参数
         User user = (User) session.getAttributes().get("user");
-        Long pictureId = (Long) session.getAttributes().get("PictureId");
+        Long pictureId = (Long) session.getAttributes().get("pictureId");
 
         pictureEditEventProducer.publishEvent(pictureEditRequestMessage, session, user, pictureId);
     }
@@ -162,7 +163,7 @@ public class PictureEditHandler extends TextWebSocketHandler {
             String message = objectMapper.writeValueAsString(pictureEditResponseMessage);
             TextMessage textMessage = new TextMessage(message);
             for(WebSocketSession webSocketSession : sessions){
-                if(webSocketSession != null && excludeSession.equals(webSocketSession)){
+                if(webSocketSession != null && webSocketSession.equals(excludeSession)){
                     continue;
                 }
                 if(webSocketSession.isOpen()){
